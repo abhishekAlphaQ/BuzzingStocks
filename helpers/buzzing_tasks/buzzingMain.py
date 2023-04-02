@@ -6,7 +6,6 @@ pb_threshold = 2.75
 mkt_cr_threshold = 1
 skip_row_count = 2
 date_obj = datetime.datetime.now()
-formatted_date = date_obj.strftime("%d %b %Y")
 selected_stock_golden,selected_stock = [],[]
 
 buzz_request_list = [
@@ -57,6 +56,9 @@ def goldenChecker(symbol):
     except Exception as e:
         print(str(e))
 
+def getLogoUrl(ticker):
+        return requests.get(f'https://gateway.alphaq.uat.fegno.com/api/v1/utilities/search?q={ticker}')
+
 def request_report(token,qry,file_bio):
     cookies = {
         'XSRF-TOKEN': token[0],
@@ -93,26 +95,28 @@ def request_report(token,qry,file_bio):
     
     if(file_bio == 'Golden Cross Over based on fundamentals'):
         for s in df_price_based:
-            goldenChecker(s)
+            logoUrl = goldenChecker(s)
             if len(selected_stock_golden) == 4:
                 break
         for sc in selected_stock_golden:
-            selected_cell = [sc, 'Long Term', formatted_date, file_bio]
+            logoUrl = ((getLogoUrl(sc)).json())['results'][0]['logo']
+            selected_cell = [sc, 'Long Term', logoUrl, file_bio]
             selected_stock.append(selected_cell)     
 
     else:
         for si in df_price_based[0:3]: 
-            selected_cell = [si, 'Short Term', formatted_date, file_bio]
-            selected_stock.append(selected_cell)
-            
-for bx in buzz_request_list:
-    main_response = requests.get(bx[0])
-    token = main_response.cookies.values()
-    soup = BeautifulSoup(main_response.text,'html.parser')
-    csrf_token = soup.find('meta',{'name':'csrf-token'})
-    if csrf_token:
-        token.append(csrf_token['content'])
-    response = request_report(token,qry = bx[1],file_bio = bx[2])
+            if(si !='M&MFIN'): #TODO: remove this line
+                logoUrl = ((getLogoUrl(si)).json())['results'][0]['logo']
+                selected_cell = [si, 'Short Term', logoUrl, file_bio]
+                selected_stock.append(selected_cell)
 
-for b in selected_stock:
-    print(b)
+def getBuzzStocks(count):    
+    for bx in buzz_request_list:
+        main_response = requests.get(bx[0])
+        token = main_response.cookies.values()
+        soup = BeautifulSoup(main_response.text,'html.parser')
+        csrf_token = soup.find('meta',{'name':'csrf-token'})
+        if csrf_token:
+            token.append(csrf_token['content'])
+        request_report(token,qry = bx[1],file_bio = bx[2])
+    return selected_stock[:count]

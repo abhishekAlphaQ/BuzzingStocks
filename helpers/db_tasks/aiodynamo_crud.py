@@ -30,6 +30,12 @@ async def aiodynamoScan(table, exp):
         client = Client(AIOHTTP(session), Credentials.auto(), "ap-south-1")
         result = [item async for item in client.scan(table, filter_expression=exp)]
         return result
+    
+async def aiodynamoScanHbd(table, exp):
+    async with ClientSession() as session:
+        client = Client(AIOHTTP(session), Credentials.auto(), "ap-south-2")
+        result = [item async for item in client.scan(table, filter_expression=exp)]
+        return result
 
 async def aiodynamoScanAll(table):
     async with ClientSession() as session:
@@ -46,15 +52,19 @@ async def aiodynamoUpdateItem(table,pk:dict, exp):
         result = await table.update_item(pk, exp)
         return result
         
-async def aiodynamoPut(table, exp):
+async def aiodynamoPut(table,pk, exp):
     async with ClientSession() as session:
         client = Client(AIOHTTP(session), Credentials.auto(), "ap-south-1")
         # result = [item async for item in client.scan(table, filter_expression=exp)]
         table = client.table(table)
+        # print("hiiii")
         await table.put_item(exp)
 
-        # result = await table.get_item(pk)
-        # return result
+        result = await table.get_item(pk)
+        # print("hooo")
+        # print(result)
+        # result = await client.put_item(table=,pk,exp)
+        return result
 
 async def aiodynamoDelete(table, exp):
     async with ClientSession() as session:
